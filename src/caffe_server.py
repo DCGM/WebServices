@@ -26,7 +26,7 @@ inputQueue='caffe_queue'
 pycaffe_dir = "/home/ihradis/cuda-workspace/caffe/python/";
 
 #load synset definitions
-synsets = scipy.io.loadmat('synsets.mat')
+synsets = scipy.io.loadmat('../data/synsets.mat')
 
 model_def = os.path.join(pycaffe_dir,
                 "../examples/imagenet/imagenet_deploy.prototxt")
