@@ -1,0 +1,53 @@
+package protointerface;
+
+message FEConfiguration{
+
+}
+
+message TranslateConfiguration{
+  optional uint32 neighborCount = 1 [default = 1];
+}
+
+message MatchConfiguration{
+  optional uint32 listSize = 1 [default = 100];
+  optional string database = 2 [default = ""];
+}
+
+message CaffeConfiguration{
+  optional uint32 resultSize = 1 [default = 5];
+}
+
+message Configuration {
+  optional string queue = 1;
+  optional FEConfiguration fe = 2;
+  optional TranslateConfiguration translate = 3;
+  optional MatchConfiguration match = 4;
+  optional CaffeConfiguration caffe = 5;
+}
+
+message BlobFloat{
+  repeated uint32 dim = 1 [packed = true];
+  required bytes data = 2;
+}
+
+message ResultList{
+  repeated float score = 1 [packed = true];
+  repeated string url = 2; 
+}
+
+message WorkRequest{
+  optional string uuid = 1;
+  optional double timestamp = 2;
+ 
+  repeated Configuration configuration = 3;
+  repeated Configuration pastConfiguration = 5;
+  
+  optional uint32 errorCode = 6 [default = 0];
+  repeated string message = 7;
+  optional string returnQueue = 8;
+  
+  optional bytes image = 17;
+  optional BlobFloat blob = 18;
+  optional ResultList result = 19;
+}
+

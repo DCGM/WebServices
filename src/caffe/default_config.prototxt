@@ -1,0 +1,6 @@
+configuration{
+	queue: "caffe_queue"
+    caffe{
+		resultSize: 16
+	}
+}
