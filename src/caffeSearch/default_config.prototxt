@@ -1,0 +1,6 @@
+configuration{
+	queue: "caffe_search_queue"
+    caffeSearch{
+		resultSize: 16
+	}
+}

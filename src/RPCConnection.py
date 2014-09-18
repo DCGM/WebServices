@@ -24,8 +24,8 @@ class RPCConnection( object):
         
         try:
           self.callback( request)
-        except:
-          pass
+        except Exception, e:
+          print e
         # remove current configuration from queue
         request.pastConfiguration.add().CopyFrom( request.configuration[0])
         request.configuration.remove( request.configuration[0])

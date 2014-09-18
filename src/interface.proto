@@ -17,12 +17,17 @@ message CaffeConfiguration{
   optional uint32 resultSize = 1 [default = 5];
 }
 
+message CaffeSearchConfiguration{
+  optional uint32 resultSize = 1 [default = 5];
+}
+
 message Configuration {
   optional string queue = 1;
   optional FEConfiguration fe = 2;
   optional TranslateConfiguration translate = 3;
   optional MatchConfiguration match = 4;
   optional CaffeConfiguration caffe = 5;
+  optional CaffeSearchConfiguration caffeSearch = 6;
 }
 
 message BlobFloat{

@@ -26,7 +26,7 @@ port=5672
 user='testing'
 password='its'
 
-serveraddr = ('', 8888) #port on which to listen
+serveraddr = ('', 8889) #port on which to listen
 
 
 
@@ -117,6 +117,8 @@ class ServerHanlder( SimpleHTTPRequestHandler):
     defaultConfiguration = "default_config"
     requestTimeout = 6
     caffeConfigPath = "./caffe/"
+    caffeSearchConfigPath = "./caffeSearch/"
+
 
     # serves files from current folder# Catch a Keyboard Interrupt to make sure that the connection is closed cleanly
     def do_GET( self):
@@ -177,6 +179,10 @@ class ServerHanlder( SimpleHTTPRequestHandler):
         request.returnQueue = callback_queue_name
         return request
              
+    def createImageTiles( self, url):
+      images = [ '<img src="%s">' % x for x in url]
+      return "\n".join( images)
+
     # custom POST handling
     def do_POST( self):
         try:
@@ -185,6 +191,41 @@ class ServerHanlder( SimpleHTTPRequestHandler):
             self.getRequestDataFromClient()
             form = self.parsePOSTContent()
             
+            
+            if self.path == '/search':
+                print "SEARCH"
+                configurationName = self.caffeSearchConfigPath + self.getConfigurationName( form)
+                configuration = self.getConfiguration( configurationName)
+                if 'url' in form:
+                    response = requests.get( form['url'].value)
+                    request = self.buildRequest( configuration, response.content) 
+                else:
+                    request = self.buildRequest( configuration, form['file'].value)    
+              
+                responseQueue = Queue.Queue();
+                receiver.registerRequests( { request.uuid: responseQueue })
+                senderQueue.put( { 'exchange': '', 
+                            'routing_key': request.configuration[0].queue, 
+                            'reply_to': callback_queue_name,
+                            'correlation_id': request.uuid,
+                            'body': request.SerializeToString()})
+                
+                response = responseQueue.get( block=True, timeout=ServerHanlder.requestTimeout)
+                #self.sendResponse(response)
+                
+                request = WorkRequest()
+                request.ParseFromString( response)
+                responseText = self.createImageTiles( request.result.url)
+                self.send_response(200, 'OK')
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+                self.wfile.write( responseText)
+
+                
+                print "DONE in ", str( time.time() - sTime)
+                return
+
+
             if self.path == '/tagging':
                 configurationName = self.caffeConfigPath + self.getConfigurationName( form)
                 configuration = self.getConfiguration( configurationName)
