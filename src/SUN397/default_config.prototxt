@@ -1,0 +1,6 @@
+configuration{
+	queue: "SUN397_queue"
+    caffe{
+		resultSize: 16
+	}
+}

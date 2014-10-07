@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script type="text/javascript">
+
+$(document).ready(function() {
+
+	//Callback handler for form submit event
+	$("#idForm").submit(function(e)
+	{
+	 
+		var formObj = $(this);
+		var formURL = formObj.attr("action");
+		var formData = new FormData(this);
+		$.ajax({
+			url: formURL,
+		type: 'POST',
+		data:  formData,
+		mimeType:"multipart/form-data",
+		contentType: false,
+			cache: false,
+			processData:false,
+		success: function(data, textStatus, jqXHR)
+		{
+			$("#result").html(data);
+		},
+		 error: function(jqXHR, textStatus, errorThrown)
+		 {
+			alert(textStatus);
+		 }         
+		});
+		
+		e.preventDefault(); //Prevent Default action.
+		e.unbind();
+		//return false;
+	});
+
+
+	$(function() {
+		$('.tags_select a').click(function() {
+			var value = $(this).text();
+			var input = $('#img_url');
+			input.val(value);
+			$( "#idForm" ).submit();
+			return false;
+		});
+	});
+});
+
+</script>
+</head>
+<body>
+
+<div class="tags_select">
+	<ul>
+		<li>Badlands: <a href="#">http://www.rodplanck.com/images/gallery-large/people/Rod_Planck_Marlene_Planck_Badlands_National_Park_South_Dakot.jpg</a>
+		<li>Electrical substation: <a href="#">http://s.hswstatic.com/gif/power-ss-transformer.jpg</a></li>
+		<li>Airplane cabin: <a href="#">http://resources1.news.com.au/images/2012/03/12/1226297/187761-aircraft-cabin.jpg</a></li>
+		<li>Cafeteria: <a href="#">http://www.maverickcuisine.com/wp-content/uploads/2013/12/Food-Court.jpg</a></li>
+		<li>Dam: <a href="#">http://media-cdn.tripadvisor.com/media/photo-s/03/d1/06/93/manton-dam.jpg</a></li>
+		<li>Factory: <a href="#">http://www.boeingcapital.com/p2p/archive/12.2007/images/787-Factory_500.jpg</a></li>
+		<li>Badminton: <a href="#">http://i.ytimg.com/vi/kPCgZuaTc5Y/maxresdefault.jpg</a></li>
+		<li>Badminton 2: <a href="#">http://tasmaclondon.files.wordpress.com/2011/08/playing-badminton.jpg</a></li>
+		<li>Basketball outdoor: <a href="#">http://www.farwestchina.com/wp-content/uploads/2008/12/outdoor-basketball.jpg</a></li>
+		<li>Attic: <a href="#">http://www.sponsume.com/sites/default/files/projects/laura%20france-23634/gallery/attic-level-paris.jpg</a></li>
+	</ul>
+</div>
+
+<form id="idForm" name="form1" method="post" enctype="multipart/form-data" action="http://pchradis.fit.vutbr.cz:8888/sun397">
+    <div>
+        <input id="img_url" name="url" type="text" />
+    </div>
+    <div>
+        <input type="submit" value="Submit" />
+    </div>
+</form>
+
+<h1>Result</h1>
+<div id="result"></div>
+
+
+</body>
+</html>

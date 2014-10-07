@@ -1,0 +1,6 @@
+configuration{
+    queue: "resize_queue"
+    resize{
+       ratio: 0.5
+    }
+}
