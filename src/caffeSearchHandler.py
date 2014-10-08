@@ -1,4 +1,5 @@
 import json
+import requests
 
 class CaffeSearchHandler:
     configPath = "./caffeSearch/"

@@ -2,7 +2,6 @@ import Queue
 import threading
 import time
 import uuid
-import requests
 import re
 import json
 import cgitb
