@@ -23,19 +23,19 @@ user='testing'
 password='its'
 inputQueue='SUN397_queue'
 
-data_path = "../data/SUN397/"
+data_path = "../data"
 
 #load synset definitions
-classFile = os.path.join( data_path, "classes.txt")
+classFile = os.path.join( data_path, "SUN397/classes.txt")
 with open( classFile, "r") as f:
     synsets = f.read().split()
 
-model_def = os.path.join( data_path, "deploy.prototxt")
-pretrained_model = os.path.join( data_path, "SUN397_iter_90000.caffemodel")
+model_def = os.path.join( data_path, "SUN397/deploy.prototxt")
+pretrained_model = os.path.join( data_path, "SUN397/SUN397_iter_90000.caffemodel")
+mean_file = os.path.join( data_path, 'ilsvrc_2012_mean.npy')
 
 image_dims = [256,256]
 gpu = True
-mean_file = os.path.join( data_path, 'ilsvrc_2012_mean.npy')
 raw_scale = 255.0
 channel_swap = [2,1,0]
 

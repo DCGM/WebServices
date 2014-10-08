@@ -23,12 +23,12 @@ user='testing'
 password='its'
 inputQueue='caffe_search_queue'
 
-dataPath = "../data/RTR/"
-model_def        = os.path.join( dataPath, "RTR_deploy_fc6.prototxt")
-pretrained_model = os.path.join( dataPath, "RTR_iter_25000")
+dataPath = "../data"
+model_def        = os.path.join( dataPath, "RTR/RTR_deploy_fc6.prototxt")
+pretrained_model = os.path.join( dataPath, "RTR/RTR_iter_25000")
 mean_file        = os.path.join( dataPath, "ilsvrc_2012_mean.npy")
-modelFile        = os.path.join( dataPath, "PROD256.fc6")
-modelURLFile     = os.path.join( dataPath, "PROD256.list")
+modelFile        = os.path.join( dataPath, "RTR/PROD256.fc6")
+modelURLFile     = os.path.join( dataPath, "RTR/PROD256.list")
 
 imageDim = 256
 image_dims = [ imageDim, imageDim]

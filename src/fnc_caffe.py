@@ -28,9 +28,9 @@ inputQueue='caffe_queue'
 
 # read data
 dataPath = "../data"
-synsets = scipy.io.loadmat( os.path.join( dataPath, "synsets.mat"))
-model_def = os.path.join( dataPath, "SUN397/deploy.prototxt")
-pretrained_model = os.path.join( dataPath, "caffe_reference_imagenet_model")
+synsets = scipy.io.loadmat( os.path.join( dataPath, "ILSVRC/synsets.mat"))
+model_def = os.path.join( dataPath, "ILSVRC/deploy.prototxt")
+pretrained_model = os.path.join( dataPath, "ILSVRC/caffe_reference_imagenet_model")
 mean_file = os.path.join( dataPath, "ilsvrc_2012_mean.npy")
 
 # caffe params
