@@ -149,14 +149,14 @@ class ServerHanlder( SimpleHTTPRequestHandler):
             else:  
                 self.send_response( 400, "Wrong request format.")
 
-        finally:
-           print "%s in %s" % (self.path, str(time.time() - sTime))
-        """except IOError, e:
+        except IOError, e:
             print "XXXX", e
             self.send_response( 400, str( e))
         except Exception, e:
             print "YYYY",  e 
-            self.send_response( 400, "Exeption")"""
+            self.send_response( 400, "Exeption")
+        finally:
+           print "%s in %s" % (self.path, str(time.time() - sTime))
 
 
 # multi-threaded server class
