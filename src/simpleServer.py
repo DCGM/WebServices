@@ -1,24 +1,28 @@
-from BaseHTTPServer import HTTPServer
 import Queue
-from SimpleHTTPServer import SimpleHTTPRequestHandler
-from SocketServer import ThreadingMixIn
-from cgi import  FieldStorage
-import pika
 import threading
 import time
 import uuid
 import requests
-
-from interface_pb2 import WorkRequest
+import re
 import json
-
-
 import cgitb
+from BaseHTTPServer import HTTPServer
+from SimpleHTTPServer import SimpleHTTPRequestHandler
+from SocketServer import ThreadingMixIn
+from cgi import FieldStorage
 try:
     from cStringIO import StringIO
 except:
     from StringIO import StringIO
 
+import pika
+
+from RPCConnection import ReceiverThread, SenderThread
+from interface_pb2 import WorkRequest
+from caffeHandler import CaffeHandler 
+from caffeSUN397Handler import CaffeSUN397Handler 
+from caffeSearchHandler import CaffeSearchHandler 
+from resizeHandler import ResizeHandler
 
 # RabbitMQ connection information
 address='pchradis.fit.vutbr.cz'
@@ -26,106 +30,30 @@ port=5672
 user='testing'
 password='its'
 
-serveraddr = ('', 8889) #port on which to listen
+#port on which to listen
+serveraddr = ('', 8888) 
 
 
-
-class receiverThread( threading.Thread):
-    """
-    Thread that accepts AMQP messages and passes them to registered listeners
-    """
-    
-    def __init__(self, callback_queue, requestQueue, lock, address='localhost', port=5672, user='quest', password='quest'):
-        """
-        Constructor.
-        
-        @param callback_queue a list which is appended with  return queue name where this receiver listens
-        @param requestQueue a python queue where clients send  
-        """
-        threading.Thread.__init__(self)
-
-        self.requestQueue = requestQueue
-        self.requests = {}
-        self.requestLock = threading.Lock()
-        
-        self.connection = pika.BlockingConnection( 
-             pika.ConnectionParameters( address, port, '/', 
-                 pika.PlainCredentials( user, password)))
-
-        self.channel = self.connection.channel()
-        result = self.channel.queue_declare(exclusive=True)
-        self.callback_queue = result.method.queue
-        self.channel.basic_consume( self.on_response, no_ack=True,
-                                   queue=self.callback_queue)   
-
-        callback_queue.append( self.callback_queue)
-        lock.release()
-
-    def registerRequests(self, requests):
-        self.requestLock.acquire()
-        for k in requests.keys():
-            self.requests[ k] = requests[k]   
-        self.requestLock.release()  
-
-    def on_response(self, ch, method, props, body):
-
-        #TODO - fix requsts locking - this code should not work
-        if props.correlation_id in self.requests.keys():
-            self.requests[props.correlation_id].put( body)
-            self.requests.pop( props.correlation_id)        
-        else:
-            print " [x] Wrong correlation_id"
-        
-    def run( self):
-        while True:
-            self.connection.process_data_events() 
-
-
-class senderThread( threading.Thread):
-    """
-    Thread that reads messages from a queue and sends them.
-    """
-    
-    def __init__(self, inputQueue, address='localhost', port=5672, user='quest', password='quest'):
-        """
-        Constructor.
-        
-        @param inputQueue  python queue where others can push messages
-        """
-
-        threading.Thread.__init__(self)
-
-        self.connection = pika.BlockingConnection( 
-             pika.ConnectionParameters( address, port, '/', 
-                 pika.PlainCredentials( user, password)))
-        self.channel = self.connection.channel()   
-        self.inputQueue = inputQueue
-
-    def run( self):
-        while True:
-            request = self.inputQueue.get( block=True)
-            self.channel.basic_publish(exchange=request['exchange'],
-                                   routing_key=request['routing_key'],
-                                   properties=pika.BasicProperties(
-                                         reply_to = request['reply_to'],
-                                         correlation_id = request['correlation_id'],
-                                         ),
-                                   body=request['body'])
 
 class ServerHanlder( SimpleHTTPRequestHandler):
 
     defaultConfiguration = "default_config"
     requestTimeout = 6
-    caffeConfigPath = "./caffe/"
-    caffeSearchConfigPath = "./caffeSearch/"
+    
+    def registerHandlers( self):
+        self.handlers = []
+        self.registerHandler( "/resize$", ResizeHandler())
+        self.registerHandler( "/tagging$", CaffeHandler())
+        self.registerHandler( "/sun397$", CaffeSUN397Handler())
+        self.registerHandler( "/search/json$|/search$", CaffeSearchHandler())
 
-
-    # serves files from current folder# Catch a Keyboard Interrupt to make sure that the connection is closed cleanly
+    def registerHandler( self, path, handler):
+        self.handlers.append( (re.compile( path) , handler))
+    
+    # serves files from current folder
+    # Catch a Keyboard Interrupt to make sure that the connection is closed cleanly
     def do_GET( self):
         SimpleHTTPRequestHandler.do_GET( self)
-    
-    def packMessage(self, iamgeData, configFile):
-        pass
     
     def getRequestDataFromClient(self):
         # the client can wait with sending of data until server sends this (curl does this)
@@ -149,7 +77,6 @@ class ServerHanlder( SimpleHTTPRequestHandler):
                          })
         return form
     
-    
     def createResponseList(self, score, url):
         results = []
         for i in range( len( score)):
@@ -172,12 +99,23 @@ class ServerHanlder( SimpleHTTPRequestHandler):
     def getConfigurationName(self, form):
         return form.getvalue( 'configuration', ServerHanlder.defaultConfiguration)
     
-    def buildRequest(self, request, image):    
+    def buildRequest(self, request, image=''):    
         request.uuid = str(uuid.uuid4())
         request.timestamp = time.time()
         request.image = image
         request.returnQueue = callback_queue_name
         return request
+
+    def sendRequest( self, request):
+        responseQueue = Queue.Queue();
+        receiver.registerRequests( { request.uuid: responseQueue })
+        senderQueue.put( { 'exchange': '', 
+                        'routing_key': request.configuration[0].queue, 
+                        'reply_to': callback_queue_name,
+                        'correlation_id': request.uuid,
+                        'body': request.SerializeToString()})
+        return responseQueue
+
              
     def createImageTiles( self, url):
       images = [ '<img src="%s">' % x for x in url]
@@ -185,108 +123,46 @@ class ServerHanlder( SimpleHTTPRequestHandler):
 
     # custom POST handling
     def do_POST( self):
+        sTime = time.time()
+        print self.path
         try:
-            sTime = time.time()
+            self.registerHandlers()
 
             self.getRequestDataFromClient()
             form = self.parsePOSTContent()
-            
-            
-            if self.path == '/search':
-                print "SEARCH"
-                configurationName = self.caffeSearchConfigPath + self.getConfigurationName( form)
-                configuration = self.getConfiguration( configurationName)
-                if 'url' in form:
-                    response = requests.get( form['url'].value)
-                    request = self.buildRequest( configuration, response.content) 
-                else:
-                    request = self.buildRequest( configuration, form['file'].value)    
+                
+            for handler in self.handlers:
+                if handler[0].match( self.path):
+                   configurationName =  handler[1].configPath + self.getConfigurationName( form)
+                   configuration = self.getConfiguration( configurationName)
+                   request = self.buildRequest( configuration)
+                   
+                   handler[1].createRequest( form, workRequest=request)
               
-                responseQueue = Queue.Queue();
-                receiver.registerRequests( { request.uuid: responseQueue })
-                senderQueue.put( { 'exchange': '', 
-                            'routing_key': request.configuration[0].queue, 
-                            'reply_to': callback_queue_name,
-                            'correlation_id': request.uuid,
-                            'body': request.SerializeToString()})
+                   responseQueue = self.sendRequest( request)
                 
-                response = responseQueue.get( block=True, timeout=ServerHanlder.requestTimeout)
-                #self.sendResponse(response)
-                
-                request = WorkRequest()
-                request.ParseFromString( response)
-                responseText = self.createImageTiles( request.result.url)
-                self.send_response(200, 'OK')
-                self.send_header('Content-type', 'text/html')
-                self.end_headers()
-                self.wfile.write( responseText)
+                   responseStr = responseQueue.get( block=True, timeout=ServerHanlder.requestTimeout)
+                   response = WorkRequest()
+                   response.ParseFromString( responseStr)
+                   
+                   handler[1].createResponse( self, response)
+                   break
+            else:  
+                self.send_response( 400, "Wrong request format.")
 
-                
-                print "DONE in ", str( time.time() - sTime)
-                return
-
-
-            if self.path == '/tagging':
-                configurationName = self.caffeConfigPath + self.getConfigurationName( form)
-                configuration = self.getConfiguration( configurationName)
-                if 'url' in form:
-                    response = requests.get( form['url'].value)
-                    request = self.buildRequest( configuration, response.content) 
-                else:
-                    request = self.buildRequest( configuration, form['file'].value)    
-              
-                responseQueue = Queue.Queue();
-                receiver.registerRequests( { request.uuid: responseQueue })
-                senderQueue.put( { 'exchange': '', 
-                            'routing_key': request.configuration[0].queue, 
-                            'reply_to': callback_queue_name,
-                            'correlation_id': request.uuid,
-                            'body': request.SerializeToString()})
-                
-                response = responseQueue.get( block=True, timeout=ServerHanlder.requestTimeout)
-                self.sendResponse(response)
-                
-                print "DONE in ", str( time.time() - sTime)
-                return
-                
-                
-                
-            # process data
-            if form.has_key('file'):
-
-                configurationName = self.getConfigurationName( form)
-                configuration = self.getConfiguration( configurationName)
-                request = self.buildRequest( configuration, form['file'].value)    
-              
-                responseQueue = Queue.Queue();
-                receiver.registerRequests( { request.uuid: responseQueue })
-                senderQueue.put( { 'exchange': '', 
-                            'routing_key': 'rpc_queue', 
-                            'reply_to': callback_queue_name,
-                            'correlation_id': request.uuid,
-                            'body': request.SerializeToString()})
-                
-                response = responseQueue.get( block=True, timeout=ServerHanlder.requestTimeout)
-                self.sendResponse(response)
-                
-                print "DONE in ", str( time.time() - sTime)
-                return
-           
-            self.send_response( 400, "Wrong request format.")
-                
-        except IOError, e:
+        finally:
+           print "%s in %s" % (self.path, str(time.time() - sTime))
+        """except IOError, e:
             print "XXXX", e
             self.send_response( 400, str( e))
         except Exception, e:
             print "YYYY",  e 
-            self.send_response( 400, "Exeption")
+            self.send_response( 400, "Exeption")"""
+
 
 # multi-threaded server class
 class ThreadingServer( ThreadingMixIn, HTTPServer):
     pass
-
-
-
 
 global callback_queue_name
 global senderQueue
@@ -300,13 +176,13 @@ callback_queue = []
 receiverQueue=Queue.Queue()
 
 
-receiver = receiverThread( callback_queue=callback_queue, requestQueue=receiverQueue, 
+receiver = ReceiverThread( callback_queue=callback_queue, requestQueue=receiverQueue, 
     address=address, port=port, user=user, password=password, lock=lock)
 lock.acquire()
 callback_queue_name = callback_queue[0]
 
 senderQueue = Queue.Queue();
-sender = senderThread( inputQueue=senderQueue, 
+sender = SenderThread( inputQueue=senderQueue, 
     address=address, port=port, user=user, password=password,)
 
 sender.start();

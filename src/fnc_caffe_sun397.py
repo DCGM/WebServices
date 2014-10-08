@@ -36,7 +36,7 @@ pretrained_model = os.path.join( data_path, "SUN397_iter_90000.caffemodel")
 image_dims = [256,256]
 gpu = True
 mean_file = os.path.join( data_path, 'ilsvrc_2012_mean.npy')
-input_scale = 255
+raw_scale = 255.0
 channel_swap = [2,1,0]
 
 class ClasificationRequest( object):
@@ -78,10 +78,12 @@ class ClasificationRequest( object):
             request.result.score.append( predictions[ i])
 
 
+mean = np.load(mean_file)
+
 print " [x] Create classifier"
 classifier = caffe.Classifier(model_def, pretrained_model,
-            image_dims=image_dims, gpu=gpu, mean=np.load( mean_file),
-            input_scale=input_scale, channel_swap=channel_swap)
+            image_dims=image_dims, gpu=gpu, mean=np.load(mean_file),
+            raw_scale=raw_scale, channel_swap=channel_swap)
 
 
 print " [x] Create request handler"

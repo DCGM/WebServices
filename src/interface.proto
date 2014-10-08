@@ -21,6 +21,11 @@ message CaffeSearchConfiguration{
   optional uint32 resultSize = 1 [default = 5];
 }
 
+message ResizeConfiguration{
+  optional double ratio = 1;
+}
+
+
 message Configuration {
   optional string queue = 1;
   optional FEConfiguration fe = 2;
@@ -28,6 +33,7 @@ message Configuration {
   optional MatchConfiguration match = 4;
   optional CaffeConfiguration caffe = 5;
   optional CaffeSearchConfiguration caffeSearch = 6;
+  optional ResizeConfiguration resize = 7;
 }
 
 message BlobFloat{

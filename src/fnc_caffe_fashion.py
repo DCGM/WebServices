@@ -33,13 +33,13 @@ modelURLFile     = os.path.join( dataPath, "PROD256.list")
 imageDim = 256
 image_dims = [ imageDim, imageDim]
 gpu = True
-input_scale = 255
+raw_scale = 255
 channel_swap = [2,1,0]
 
 print "[x] Make classifier"
 classifier = caffe.Classifier(model_def, pretrained_model,
             image_dims=image_dims, gpu=gpu, mean=np.load( mean_file),
-            input_scale=input_scale, channel_swap=channel_swap)
+            raw_scale=raw_scale, channel_swap=channel_swap)
 
 print "[x] Read models data"
 modelURL = [x.strip() for x in open( modelURLFile)]

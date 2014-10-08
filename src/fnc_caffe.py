@@ -36,7 +36,7 @@ mean_file = os.path.join( dataPath, "ilsvrc_2012_mean.npy")
 # caffe params
 image_dims = [256,256]
 gpu = True
-input_scale = 255
+raw_scale = 255
 channel_swap = [2,1,0]
 
 class ClasificationRequest( object):
@@ -81,7 +81,7 @@ class ClasificationRequest( object):
 print " [x] Init classifier"
 classifier = caffe.Classifier(model_def, pretrained_model,
             image_dims=image_dims, gpu=gpu, mean=np.load(mean_file),
-            input_scale=input_scale, channel_swap=channel_swap)
+            raw_scale=raw_scale, channel_swap=channel_swap)
 
 print " [x] Init request handler"
 classification_request=ClasificationRequest( classifier)
