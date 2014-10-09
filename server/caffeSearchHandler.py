@@ -2,7 +2,7 @@ import json
 import requests
 
 class CaffeSearchHandler:
-    configPath = "./caffeSearch/"
+    configPath = "caffeSearch"
     
     def createRequest(self, form, workRequest ):
         if 'url' in form:

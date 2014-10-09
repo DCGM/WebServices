@@ -1,5 +1,5 @@
 class ResizeHandler:
-    configPath = "./resize/"
+    configPath = "resize"
     
     def createRequest(self, form, workRequest ):
         workRequest.image = form['file'].value

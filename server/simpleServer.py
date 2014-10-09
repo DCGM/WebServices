@@ -5,6 +5,7 @@ import uuid
 import re
 import json
 import cgitb
+import os
 from BaseHTTPServer import HTTPServer
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from SocketServer import ThreadingMixIn
@@ -132,7 +133,8 @@ class ServerHanlder( SimpleHTTPRequestHandler):
                 
             for handler in self.handlers:
                 if handler[0].match( self.path):
-                   configurationName =  handler[1].configPath + self.getConfigurationName( form)
+                   serverDir = os.path.dirname(os.path.realpath(__file__))
+                   configurationName = os.path.join(serverDir, handler[1].configPath, self.getConfigurationName( form))
                    configuration = self.getConfiguration( configurationName)
                    request = self.buildRequest( configuration)
                    
